@@ -94,11 +94,11 @@ func (a *API) ListIssues(repo, state string) ([]Issue, error) {
 	url := a.baseUrl + "repos/" + repo + "/issues?state=" + state
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("ListPR: error creating http.Request: %w", err)
+		return nil, fmt.Errorf("ListIssues: error creating http.Request: %w", err)
 	}
 	res, err := a.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("ListPR: error fetching PRs from api.github.com/repos/%s: %w", repo, err)
+		return nil, fmt.Errorf("ListIssues: error fetching PRs from api.github.com/repos/%s: %w", repo, err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
@@ -106,12 +106,12 @@ func (a *API) ListIssues(repo, state string) ([]Issue, error) {
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("ListPR: error couldn't read the received body from the api: %w", err)
+		return nil, fmt.Errorf("ListIssues: error couldn't read the received body from the api: %w", err)
 	}
 	var issues []Issue
 	err = json.Unmarshal(body, &issues)
 	if err != nil {
-		return nil, fmt.Errorf("ListPR: error Unmarshal resp body: %w", err)
+		return nil, fmt.Errorf("ListIssues: error Unmarshal resp body: %w", err)
 	}
 	var iss []Issue
 	for _, issue := range issues {
@@ -128,11 +128,11 @@ func (a *API) GetIssue(repo, id string) (*Issue, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 
 	if err != nil {
-		return nil, fmt.Errorf("GetPR: error creating http.Request: %w", err)
+		return nil, fmt.Errorf("GetIssue: error creating http.Request: %w", err)
 	}
 	res, err := a.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("GetPR: error fetching PR from api.github.com/repos/%s/pulls/%s: %w", repo, id, err)
+		return nil, fmt.Errorf("GetIssue: error fetching PR from api.github.com/repos/%s/pulls/%s: %w", repo, id, err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
@@ -140,7 +140,7 @@ func (a *API) GetIssue(repo, id string) (*Issue, error) {
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("GetPR: error couldn't read the received body from the api: %w", err)
+		return nil, fmt.Errorf("GetIssue: error couldn't read the received body from the api: %w", err)
 	}
 	var issue Issue
 	err = json.Unmarshal(body, &issue)
