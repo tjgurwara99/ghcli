@@ -48,6 +48,22 @@ To list all open prs for a repository, use the following command:
 
 # The Status command is used to check the status of the requested issue or PR
 
+```
+Gives status of the requested service - pr or issues
+
+Usage:
+  ghcli status [command]
+
+Available Commands:
+  issue       Give status of the requested issue
+  pr          Give status of the requested pr
+
+Flags:
+  -h, --help   help for status
+
+Use "ghcli status [command] --help" for more information about a command.
+```
+
 To use the status command to retrieve information about an issue, use the following command:
 
 ```
