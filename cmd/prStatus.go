@@ -29,25 +29,25 @@ import (
 	"github.com/tjgurwara99/ghcli/api"
 )
 
-// prsCmd represents the pr command
-var prsCmd = &cobra.Command{
-	Use:   "prs",
-	Short: "Used to list PR's and PR related query",
-	Long:  `Used to list PR's and PR related query`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 1 {
-			return fmt.Errorf("list pr: expected only one argument: got %d", len(args))
-		}
-		if len(args) == 0 {
-			return fmt.Errorf("list prs: please provide a repo to retrieve prs from")
-		}
-		repo := args[0]
-		ghApi := api.NewApi(client, "https://api.github.com/")
-		prs, err := ghApi.ListPRs(repo, "open")
-		if err != nil {
-			return err
-		}
-		for _, pr := range prs {
+func newPrStatusCmd() *cobra.Command {
+	var prNumber string
+	var repo string
+	var prStatusCmd = &cobra.Command{
+		Use:   "pr",
+		Short: "Give status of the requested pr",
+		Long:  `Give status of the requested pr.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if prNumber == "" {
+				return fmt.Errorf("pr number is required")
+			}
+			if repo == "" {
+				return fmt.Errorf("repo is required")
+			}
+			ghApi := api.NewApi(client, "https://api.github.com/")
+			pr, err := ghApi.GetPR(repo, prNumber)
+			if err != nil {
+				return err
+			}
 			statusColour := green
 			if pr.State == "closed" {
 				statusColour = red
@@ -57,11 +57,16 @@ var prsCmd = &cobra.Command{
 			fmt.Fprintf(cmd.OutOrStdout(), "%sURL: %s\n", statusColour, pr.URL)
 			fmt.Fprintf(cmd.OutOrStdout(), "%sNumber: %d\n", statusColour, pr.Number)
 			fmt.Fprintf(cmd.OutOrStdout(), "%sBody: %s\n", statusColour, pr.Body)
-		}
-		return nil
-	},
+			return nil
+		},
+	}
+	prStatusCmd.Flags().StringVarP(&prNumber, "num", "n", "", "The number of the pr to get status for")
+	prStatusCmd.Flags().StringVarP(&repo, "repo", "r", "", "The repo to get status for")
+	_ = prStatusCmd.MarkFlagRequired("num")
+	_ = prStatusCmd.MarkFlagRequired("repo")
+	return prStatusCmd
 }
 
 func init() {
-	listCmd.AddCommand(prsCmd)
+	statusCmd.AddCommand(newPrStatusCmd())
 }

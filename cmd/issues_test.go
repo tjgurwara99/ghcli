@@ -51,7 +51,7 @@ func TestListIssuesCmd(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 	got := buff.String()
-	want := "{State:open Body:Test Issue 1 body Title:Test Issue 1 URL:https://sample.url Number:1 PullRequest:<nil>}\n"
+	want := "\x1b[32mStatus: open\n\x1b[32mTitle: Test Issue 1\n\x1b[32mURL: https://sample.url\n\x1b[32mNumber: 1\n\x1b[32mBody: Test Issue 1 body\n"
 	if got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}

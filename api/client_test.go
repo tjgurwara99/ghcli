@@ -130,7 +130,7 @@ func Test_api_ListPRs(t *testing.T) {
 	client := newTestClient(func(req *http.Request) *http.Response {
 		// Test request parameters
 		if req.URL.String() != "http://api.github.com/repos/TheAlgorithms/pulls?state=open" {
-			t.Errorf("ListIssues URL = %v, want %v", req.URL, "http://api.github.com/repos/TheAlgorithms")
+			t.Errorf("ListPRs URL = %v, want %v", req.URL, "http://api.github.com/repos/TheAlgorithms")
 		}
 		return &http.Response{
 			StatusCode: 200,
@@ -186,12 +186,86 @@ func Test_api_ListPRs(t *testing.T) {
 			a := api.NewApi(tt.fields.client, tt.fields.baseUrl)
 			got, err := a.ListPRs(tt.args.repo, tt.args.state)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ListIssues() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ListPRs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListIssues() got = %v, want %v", got, tt.want)
+				t.Errorf("ListPRs() got = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func Test_api_GetPR(t *testing.T) {
+	cl := newTestClient(func(req *http.Request) *http.Response {
+		// Test request parameters
+		if req.URL.String() != "https://api.github.com/repos/TheAlgorithms/Go/pulls/1" {
+			t.Errorf("GetPR URL = %v, want %v", req.URL, "http://api.github.com/repos/TheAlgorithms/Go/pulls/1")
+		}
+		return &http.Response{
+			StatusCode: 200,
+			// Send response to be tested
+			Body: ioutil.NopCloser(bytes.NewBufferString(`{
+	"number": 1,
+	"title": "Test PR 1",
+	"body": "Test PR 1 body",
+	"html_url": "https://sample.url",
+	"state": "open"
+}`)),
+			// Must be set to non-nil value or it panics
+			Header: make(http.Header),
+		}
+	})
+	app := api.NewApi(cl, "https://api.github.com/")
+	got, err := app.GetPR("TheAlgorithms/Go", "1")
+	if err != nil {
+		t.Errorf("GetPR() error = %v", err)
+	}
+	want := api.PullRequest{
+		Number: 1,
+		Title:  "Test PR 1",
+		Body:   "Test PR 1 body",
+		URL:    "https://sample.url",
+		State:  "open",
+	}
+	if !reflect.DeepEqual(*got, want) {
+		t.Errorf("GetPR() got = %v, want %v", got, want)
+	}
+}
+
+func Test_api_GetIssue(t *testing.T) {
+	cl := newTestClient(func(req *http.Request) *http.Response {
+		// Test request parameters
+		if req.URL.String() != "https://api.github.com/repos/TheAlgorithms/Go/issues/1" {
+			t.Errorf("GetIssues URL = %v, want %v", req.URL, "http://api.github.com/repos/TheAlgorithms/Go/issues/1")
+		}
+		return &http.Response{
+			StatusCode: 200,
+			// Send response to be tested
+			Body: ioutil.NopCloser(bytes.NewBufferString(`{
+	"number": 1,
+	"title": "Test Issue 1",
+	"body": "Test Issue 1 body",
+	"html_url": "https://sample.url",
+	"state": "open"
+}`)),
+			// Must be set to non-nil value or it panics
+			Header: make(http.Header),
+		}
+	})
+	app := api.NewApi(cl, "https://api.github.com/")
+	got, err := app.GetIssue("TheAlgorithms/Go", "1")
+	if err != nil {
+		t.Errorf("GetIssue() error = %v", err)
+	}
+	want := api.Issue{
+		Number: 1,
+		Title:  "Test Issue 1",
+		Body:   "Test Issue 1 body",
+		URL:    "https://sample.url",
+		State:  "open",
+	}
+	if !reflect.DeepEqual(*got, want) {
+		t.Errorf("GetIssue() got = %v, want %v", got, want)
 	}
 }

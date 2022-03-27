@@ -7,18 +7,13 @@ import (
 	"net/http"
 )
 
-type api struct {
+type API struct {
 	client  *http.Client
 	baseUrl string
 }
 
-type API interface {
-	ListPRs(string, string) ([]PullRequest, error)
-	ListIssues(string, string) ([]Issue, error)
-}
-
-func NewApi(client *http.Client, baseUrl string) API {
-	return &api{
+func NewApi(client *http.Client, baseUrl string) *API {
+	return &API{
 		client:  client,
 		baseUrl: baseUrl,
 	}
@@ -41,7 +36,34 @@ type Issue struct {
 	PullRequest interface{} `json:"pull_request"`
 }
 
-func (a *api) ListPRs(repo, state string) ([]PullRequest, error) {
+func (a *API) GetPR(repo, id string) (*PullRequest, error) {
+	url := a.baseUrl + "repos/" + repo + "/pulls/" + id // maybe find a better way to do this
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+
+	if err != nil {
+		return nil, fmt.Errorf("GetPR: error creating http.Request: %w", err)
+	}
+	res, err := a.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("GetPR: error fetching PR from api.github.com/repos/%s/pulls/%s: %w", repo, id, err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		return nil, fmt.Errorf("request unsuccessful: %s", res.Status)
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("GetPR: error couldn't read the received body from the api: %w", err)
+	}
+	var pr PullRequest
+	err = json.Unmarshal(body, &pr)
+	if err != nil {
+		return nil, fmt.Errorf("GetPR: error Unmarshal resp body: %w", err)
+	}
+	return &pr, nil
+}
+
+func (a *API) ListPRs(repo, state string) ([]PullRequest, error) {
 	url := a.baseUrl + "repos/" + repo + "/pulls?state=" + state
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 
@@ -68,7 +90,7 @@ func (a *api) ListPRs(repo, state string) ([]PullRequest, error) {
 	return prList, nil
 }
 
-func (a *api) ListIssues(repo, state string) ([]Issue, error) {
+func (a *API) ListIssues(repo, state string) ([]Issue, error) {
 	url := a.baseUrl + "repos/" + repo + "/issues?state=" + state
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -99,4 +121,31 @@ func (a *api) ListIssues(repo, state string) ([]Issue, error) {
 		iss = append(iss, issue)
 	}
 	return iss, nil
+}
+
+func (a *API) GetIssue(repo, id string) (*Issue, error) {
+	url := a.baseUrl + "repos/" + repo + "/issues/" + id // maybe find a better way to do this
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+
+	if err != nil {
+		return nil, fmt.Errorf("GetPR: error creating http.Request: %w", err)
+	}
+	res, err := a.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("GetPR: error fetching PR from api.github.com/repos/%s/pulls/%s: %w", repo, id, err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		return nil, fmt.Errorf("request unsuccessful: %s", res.Status)
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("GetPR: error couldn't read the received body from the api: %w", err)
+	}
+	var issue Issue
+	err = json.Unmarshal(body, &issue)
+	if err != nil {
+		return nil, fmt.Errorf("GetIssue: error Unmarshal resp body: %w", err)
+	}
+	return &issue, nil
 }

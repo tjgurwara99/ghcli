@@ -49,7 +49,15 @@ var issuesCmd = &cobra.Command{
 			return err
 		}
 		for _, issue := range issues {
-			fmt.Fprintf(cmd.OutOrStdout(), "%+v\n", issue)
+			statusColour := green
+			if issue.State == "closed" {
+				statusColour = red
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%sStatus: %s\n", statusColour, issue.State)
+			fmt.Fprintf(cmd.OutOrStdout(), "%sTitle: %s\n", statusColour, issue.Title)
+			fmt.Fprintf(cmd.OutOrStdout(), "%sURL: %s\n", statusColour, issue.URL)
+			fmt.Fprintf(cmd.OutOrStdout(), "%sNumber: %d\n", statusColour, issue.Number)
+			fmt.Fprintf(cmd.OutOrStdout(), "%sBody: %s\n", statusColour, issue.Body)
 		}
 		return nil
 	},
