@@ -31,38 +31,40 @@ import (
 )
 
 // issuesCmd represents the issues command
-var issuesCmd = &cobra.Command{
-	Use:   "issues",
-	Short: "List all issues for the stated repository",
-	Long:  `List all issues for the provided repository`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 1 {
-			return fmt.Errorf("list issues: expected only one argument: got %d", len(args))
-		}
-		if len(args) == 0 {
-			return fmt.Errorf("list issues: please provide a repo to retrieve issues from")
-		}
-		repo := args[0]
-		ghApi := api.NewApi(client, "https://api.github.com/")
-		issues, err := ghApi.ListIssues(repo, "open")
-		if err != nil {
-			return err
-		}
-		for _, issue := range issues {
-			statusColour := green
-			if issue.State == "closed" {
-				statusColour = red
+func newListIssuesCmd() *cobra.Command {
+	var repo string
+	var issuesCmd = &cobra.Command{
+		Use:   "issues",
+		Short: "List all issues for the stated repository",
+		Long:  `List all issues for the provided repository`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if repo == "" {
+				return fmt.Errorf("repo is required")
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "%sStatus: %s\n", statusColour, issue.State)
-			fmt.Fprintf(cmd.OutOrStdout(), "%sTitle: %s\n", statusColour, issue.Title)
-			fmt.Fprintf(cmd.OutOrStdout(), "%sURL: %s\n", statusColour, issue.URL)
-			fmt.Fprintf(cmd.OutOrStdout(), "%sNumber: %d\n", statusColour, issue.Number)
-			fmt.Fprintf(cmd.OutOrStdout(), "%sBody: %s\n", statusColour, issue.Body)
-		}
-		return nil
-	},
+			ghApi := api.NewApi(client, "https://api.github.com/")
+			issues, err := ghApi.ListIssues(repo, "open")
+			if err != nil {
+				return err
+			}
+			for _, issue := range issues {
+				statusColour := green
+				if issue.State == "closed" {
+					statusColour = red
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "%sStatus: %s\n", statusColour, issue.State)
+				fmt.Fprintf(cmd.OutOrStdout(), "%sTitle: %s\n", statusColour, issue.Title)
+				fmt.Fprintf(cmd.OutOrStdout(), "%sURL: %s\n", statusColour, issue.URL)
+				fmt.Fprintf(cmd.OutOrStdout(), "%sNumber: %d\n", statusColour, issue.Number)
+				fmt.Fprintf(cmd.OutOrStdout(), "%sBody: %s\n", statusColour, issue.Body)
+			}
+			return nil
+		},
+	}
+	issuesCmd.Flags().StringVarP(&repo, "repo", "r", "", "repository to retrieve issues from")
+	_ = issuesCmd.MarkFlagRequired("repo")
+	return issuesCmd
 }
 
 func init() {
-	listCmd.AddCommand(issuesCmd)
+	listCmd.AddCommand(newListIssuesCmd())
 }

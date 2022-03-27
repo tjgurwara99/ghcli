@@ -33,7 +33,7 @@ func TestListPRsCmd(t *testing.T) {
 		}
 	})
 	rootCmd.SetOut(buff)
-	rootCmd.SetArgs([]string{"list", "prs", "TheAlgorithms/Go"})
+	rootCmd.SetArgs([]string{"list", "prs", "-r", "TheAlgorithms/Go"})
 	err := rootCmd.Execute()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)

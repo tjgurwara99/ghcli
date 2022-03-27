@@ -45,7 +45,7 @@ func TestListIssuesCmd(t *testing.T) {
 		}
 	})
 	rootCmd.SetOut(buff)
-	rootCmd.SetArgs([]string{"list", "issues", "TheAlgorithms/Go"})
+	rootCmd.SetArgs([]string{"list", "issues", "-r", "TheAlgorithms/Go"})
 	err := rootCmd.Execute()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
