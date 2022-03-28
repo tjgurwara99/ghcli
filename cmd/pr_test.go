@@ -13,8 +13,8 @@ func TestListPRsCmd(t *testing.T) {
 	defer func() { client = oldClient }()
 	client = newTestClient(func(req *http.Request) *http.Response {
 		// Test request parameters
-		if req.URL.String() != "https://api.github.com/repos/TheAlgorithms/Go/pulls?state=open" {
-			t.Errorf("ListIssues URL = %v, want %v", req.URL, "http://api.github.com/repos/TheAlgorithms/Go/pulls?state=open")
+		if req.URL.String() != "https://api.github.com/repos/TheAlgorithms/Go/pulls" {
+			t.Errorf("ListIssues URL = %v, want %v", req.URL, "http://api.github.com/repos/TheAlgorithms/Go/pulls")
 		}
 		return &http.Response{
 			StatusCode: 200,

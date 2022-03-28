@@ -1,151 +1,105 @@
 package api
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/google/go-github/github"
 )
 
 type API struct {
-	client  *http.Client
-	baseUrl string
+	client *http.Client
 }
 
-func NewApi(client *http.Client, baseUrl string) *API {
+func NewApi(client *http.Client) *API {
 	return &API{
-		client:  client,
-		baseUrl: baseUrl,
+		client: client,
 	}
 }
 
-type PullRequest struct {
-	State  string `json:"state"`
-	Body   string `json:"body"`
-	Title  string `json:"title"`
-	URL    string `json:"html_url"`
-	Number int    `json:"number"`
+func (a *API) GetPR(repo, id string) (*github.PullRequest, error) {
+	client := github.NewClient(a.client)
+	owner, repo, err := getOwnerAndRepo(repo)
+	if err != nil {
+		return nil, fmt.Errorf("GetPR: %w", err)
+	}
+	prID, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, fmt.Errorf("GetPR: id must be an integer: %w", err)
+	}
+	pr, resp, err := client.PullRequests.Get(context.Background(), owner, repo, prID)
+	if err != nil {
+		return nil, fmt.Errorf("GetPR: retrieving PR: %w", err)
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("GetPR: non 200 response: %s", resp.Status)
+	}
+	return pr, nil
 }
 
-type Issue struct {
-	State       string      `json:"state"`
-	Body        string      `json:"body"`
-	Title       string      `json:"title"`
-	URL         string      `json:"html_url"`
-	Number      int         `json:"number"`
-	PullRequest interface{} `json:"pull_request"`
+func (a *API) GetIssue(repo, id string) (*github.Issue, error) {
+	client := github.NewClient(a.client)
+	owner, repo, err := getOwnerAndRepo(repo)
+	if err != nil {
+		return nil, fmt.Errorf("GetIssue: %w", err)
+	}
+	issueID, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, fmt.Errorf("GetIssue: id must be an integer: %w", err)
+	}
+	issue, resp, err := client.Issues.Get(context.Background(), owner, repo, issueID)
+	if err != nil {
+		return nil, fmt.Errorf("GetIssue: retrieving PR: %w", err)
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("GetIssue: non 200 response: %s", resp.Status)
+	}
+	return issue, nil
+
 }
 
-func (a *API) GetPR(repo, id string) (*PullRequest, error) {
-	url := a.baseUrl + "repos/" + repo + "/pulls/" + id // maybe find a better way to do this
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-
-	if err != nil {
-		return nil, fmt.Errorf("GetPR: error creating http.Request: %w", err)
+func getOwnerAndRepo(addr string) (owner string, repo string, err error) {
+	split := strings.Split(addr, "/")
+	if len(split) != 2 {
+		return "", "", fmt.Errorf("incorrect input format - repo should be provided along with owner eg 'owner/repo'")
 	}
-	res, err := a.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("GetPR: error fetching PR from api.github.com/repos/%s/pulls/%s: %w", repo, id, err)
-	}
-	defer res.Body.Close()
-	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("request unsuccessful: %s", res.Status)
-	}
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("GetPR: error couldn't read the received body from the api: %w", err)
-	}
-	var pr PullRequest
-	err = json.Unmarshal(body, &pr)
-	if err != nil {
-		return nil, fmt.Errorf("GetPR: error Unmarshal resp body: %w", err)
-	}
-	return &pr, nil
+	return split[0], split[1], nil
 }
 
-func (a *API) ListPRs(repo, state string) ([]PullRequest, error) {
-	url := a.baseUrl + "repos/" + repo + "/pulls?state=" + state
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-
+func (a *API) ListPRs(repo, state string) ([]*github.PullRequest, error) {
+	client := github.NewClient(a.client)
+	owner, repo, err := getOwnerAndRepo(repo)
 	if err != nil {
-		return nil, fmt.Errorf("ListPR: error creating http.Request: %w", err)
+		return nil, fmt.Errorf("ListPRS: %w", err)
 	}
-	res, err := a.client.Do(req)
+	prs, resp, err := client.PullRequests.List(context.Background(), owner, repo, nil)
 	if err != nil {
-		return nil, fmt.Errorf("ListPR: error fetching PRs from api.github.com/repos/%s: %w", repo, err)
+		return nil, fmt.Errorf("ListPRs: error retrieving PRs: %w", err)
 	}
-	defer res.Body.Close()
-	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("request unsuccessful: %s", res.Status)
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("ListPRs: non successful response code: %s", resp.Status)
 	}
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("ListPR: error couldn't read the received body from the api: %w", err)
-	}
-	var prList []PullRequest
-	err = json.Unmarshal(body, &prList)
-	if err != nil {
-		return nil, fmt.Errorf("ListPR: error Unmarshal resp body: %w", err)
-	}
-	return prList, nil
+	return prs, nil
 }
 
-func (a *API) ListIssues(repo, state string) ([]Issue, error) {
-	url := a.baseUrl + "repos/" + repo + "/issues?state=" + state
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+func (a *API) ListIssues(repo, state string) ([]*github.Issue, error) {
+	client := github.NewClient(a.client)
+	owner, repo, err := getOwnerAndRepo(repo)
 	if err != nil {
-		return nil, fmt.Errorf("ListIssues: error creating http.Request: %w", err)
+		return nil, fmt.Errorf("ListIssues: %w", err)
 	}
-	res, err := a.client.Do(req)
+	opt := github.IssueListByRepoOptions{
+		State: state,
+	}
+	issues, resp, err := client.Issues.ListByRepo(context.TODO(), owner, repo, &opt)
 	if err != nil {
-		return nil, fmt.Errorf("ListIssues: error fetching PRs from api.github.com/repos/%s: %w", repo, err)
+		return nil, fmt.Errorf("ListIssues: error retrieving issues: %w", err)
 	}
-	defer res.Body.Close()
-	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("request unsuccessful: %s", res.Status)
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("ListIssues: non successful response code: %s", resp.Status)
 	}
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("ListIssues: error couldn't read the received body from the api: %w", err)
-	}
-	var issues []Issue
-	err = json.Unmarshal(body, &issues)
-	if err != nil {
-		return nil, fmt.Errorf("ListIssues: error Unmarshal resp body: %w", err)
-	}
-	var iss []Issue
-	for _, issue := range issues {
-		if issue.PullRequest != nil {
-			continue
-		}
-		iss = append(iss, issue)
-	}
-	return iss, nil
-}
-
-func (a *API) GetIssue(repo, id string) (*Issue, error) {
-	url := a.baseUrl + "repos/" + repo + "/issues/" + id // maybe find a better way to do this
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-
-	if err != nil {
-		return nil, fmt.Errorf("GetIssue: error creating http.Request: %w", err)
-	}
-	res, err := a.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("GetIssue: error fetching PR from api.github.com/repos/%s/pulls/%s: %w", repo, id, err)
-	}
-	defer res.Body.Close()
-	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("request unsuccessful: %s", res.Status)
-	}
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("GetIssue: error couldn't read the received body from the api: %w", err)
-	}
-	var issue Issue
-	err = json.Unmarshal(body, &issue)
-	if err != nil {
-		return nil, fmt.Errorf("GetIssue: error Unmarshal resp body: %w", err)
-	}
-	return &issue, nil
+	return issues, nil
 }

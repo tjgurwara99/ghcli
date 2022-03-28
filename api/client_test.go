@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-github/github"
 	"github.com/tjgurwara99/ghcli/api"
 )
 
@@ -53,8 +54,8 @@ func Test_api_ListIssues(t *testing.T) {
 	}
 	client := newTestClient(func(req *http.Request) *http.Response {
 		// Test request parameters
-		if req.URL.String() != "http://api.github.com/repos/TheAlgorithms/issues?state=open" {
-			t.Errorf("ListIssues URL = %v, want %v", req.URL, "http://api.github.com/repos/TheAlgorithms")
+		if req.URL.String() != "https://api.github.com/repos/tjgurwara99/Go/issues?state=open" {
+			t.Errorf("ListIssues URL = %v, want %v", req.URL, "https://api.github.com/repos/TheAlgorithms")
 		}
 		return &http.Response{
 			StatusCode: 200,
@@ -76,11 +77,16 @@ func Test_api_ListIssues(t *testing.T) {
 		repo  string
 		state string
 	}
+	test1Num := 1
+	test1Title := "Test Issue 1"
+	test1Body := "Test Issue 1 body"
+	test1URL := "https://sample.url"
+	test1State := "open"
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    []api.Issue
+		want    []*github.Issue
 		wantErr bool
 	}{
 		{
@@ -90,17 +96,16 @@ func Test_api_ListIssues(t *testing.T) {
 				baseUrl: "http://api.github.com/",
 			},
 			args: args{
-				repo:  "TheAlgorithms",
+				repo:  "tjgurwara99/Go",
 				state: "open",
 			},
-			want: []api.Issue{
+			want: []*github.Issue{
 				{
-					Number:      1,
-					Title:       "Test Issue 1",
-					Body:        "Test Issue 1 body",
-					URL:         "https://sample.url",
-					State:       "open",
-					PullRequest: nil,
+					Number:  &test1Num,
+					Title:   &test1Title,
+					Body:    &test1Body,
+					HTMLURL: &test1URL,
+					State:   &test1State,
 				},
 			},
 			wantErr: false,
@@ -108,7 +113,7 @@ func Test_api_ListIssues(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := api.NewApi(tt.fields.client, tt.fields.baseUrl)
+			a := api.NewApi(tt.fields.client)
 			got, err := a.ListIssues(tt.args.repo, tt.args.state)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListIssues() error = %v, wantErr %v", err, tt.wantErr)
@@ -124,13 +129,12 @@ func Test_api_ListIssues(t *testing.T) {
 func Test_api_ListPRs(t *testing.T) {
 	t.Parallel()
 	type fields struct {
-		client  *http.Client
-		baseUrl string
+		client *http.Client
 	}
 	client := newTestClient(func(req *http.Request) *http.Response {
 		// Test request parameters
-		if req.URL.String() != "http://api.github.com/repos/TheAlgorithms/pulls?state=open" {
-			t.Errorf("ListPRs URL = %v, want %v", req.URL, "http://api.github.com/repos/TheAlgorithms")
+		if req.URL.String() != "https://api.github.com/repos/tjgurwara99/Go/pulls" {
+			t.Errorf("ListPRs URL = %v, want %v", req.URL, "http://api.github.com/repos/tjgurwara99/Go")
 		}
 		return &http.Response{
 			StatusCode: 200,
@@ -152,30 +156,34 @@ func Test_api_ListPRs(t *testing.T) {
 		repo  string
 		state string
 	}
+	test1Num := 1
+	test1Title := "Test Issue 1"
+	test1Body := "Test Issue 1 body"
+	test1URL := "https://sample.url"
+	test1State := "open"
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    []api.PullRequest
+		want    []*github.PullRequest
 		wantErr bool
 	}{
 		{
 			name: "Test_api_ListIssues",
 			fields: fields{
-				client:  client,
-				baseUrl: "http://api.github.com/",
+				client: client,
 			},
 			args: args{
-				repo:  "TheAlgorithms",
+				repo:  "tjgurwara99/Go",
 				state: "open",
 			},
-			want: []api.PullRequest{
+			want: []*github.PullRequest{
 				{
-					Number: 1,
-					Title:  "Test Issue 1",
-					Body:   "Test Issue 1 body",
-					URL:    "https://sample.url",
-					State:  "open",
+					Number:  &test1Num,
+					Title:   &test1Title,
+					Body:    &test1Body,
+					HTMLURL: &test1URL,
+					State:   &test1State,
 				},
 			},
 			wantErr: false,
@@ -183,7 +191,7 @@ func Test_api_ListPRs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := api.NewApi(tt.fields.client, tt.fields.baseUrl)
+			a := api.NewApi(tt.fields.client)
 			got, err := a.ListPRs(tt.args.repo, tt.args.state)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListPRs() error = %v, wantErr %v", err, tt.wantErr)
@@ -216,20 +224,37 @@ func Test_api_GetPR(t *testing.T) {
 			Header: make(http.Header),
 		}
 	})
-	app := api.NewApi(cl, "https://api.github.com/")
+	app := api.NewApi(cl)
 	got, err := app.GetPR("TheAlgorithms/Go", "1")
 	if err != nil {
 		t.Errorf("GetPR() error = %v", err)
 	}
-	want := api.PullRequest{
-		Number: 1,
-		Title:  "Test PR 1",
-		Body:   "Test PR 1 body",
-		URL:    "https://sample.url",
-		State:  "open",
+	prNum := 1
+	state := "open"
+	prTitle := "Test PR 1"
+	prBody := "Test PR 1 body"
+	prURL := "https://sample.url"
+	want := github.PullRequest{
+		Number:  &prNum,
+		State:   &state,
+		Title:   &prTitle,
+		Body:    &prBody,
+		HTMLURL: &prURL,
 	}
-	if !reflect.DeepEqual(*got, want) {
-		t.Errorf("GetPR() got = %v, want %v", got, want)
+	if *got.HTMLURL != *want.HTMLURL {
+		t.Errorf("GetPR HTMLURL don't match; got %v, want %v", *got.HTMLURL, want.HTMLURL)
+	}
+	if *got.Number != *want.Number {
+		t.Errorf("GetPR PR NUMBER don't match; got %v, want %v", *got.HTMLURL, want.HTMLURL)
+	}
+	if *got.State != *want.State {
+		t.Errorf("GetPR PR State don't match; got %v, want %v", *got.State, *want.State)
+	}
+	if *got.Title != *want.Title {
+		t.Errorf("GetPR PR Title don't match; got %v, want %v", *got.Title, *want.Title)
+	}
+	if *got.Body != *want.Body {
+		t.Errorf("GetPR PR Body don't match; got %v, want %v", *got.Body, *want.Body)
 	}
 }
 
@@ -253,19 +278,36 @@ func Test_api_GetIssue(t *testing.T) {
 			Header: make(http.Header),
 		}
 	})
-	app := api.NewApi(cl, "https://api.github.com/")
+	app := api.NewApi(cl)
 	got, err := app.GetIssue("TheAlgorithms/Go", "1")
 	if err != nil {
 		t.Errorf("GetIssue() error = %v", err)
 	}
-	want := api.Issue{
-		Number: 1,
-		Title:  "Test Issue 1",
-		Body:   "Test Issue 1 body",
-		URL:    "https://sample.url",
-		State:  "open",
+	issueNum := 1
+	issueTitle := "Test Issue 1"
+	issueBody := "Test Issue 1 body"
+	issueURL := "https://sample.url"
+	issueState := "open"
+	want := github.Issue{
+		Number:  &issueNum,
+		Title:   &issueTitle,
+		Body:    &issueBody,
+		HTMLURL: &issueURL,
+		State:   &issueState,
 	}
-	if !reflect.DeepEqual(*got, want) {
-		t.Errorf("GetIssue() got = %v, want %v", got, want)
+	if *got.HTMLURL != *want.HTMLURL {
+		t.Errorf("GetPR HTMLURL don't match; got %v, want %v", *got.HTMLURL, want.HTMLURL)
+	}
+	if *got.Number != *want.Number {
+		t.Errorf("GetPR PR NUMBER don't match; got %v, want %v", *got.HTMLURL, want.HTMLURL)
+	}
+	if *got.State != *want.State {
+		t.Errorf("GetPR PR State don't match; got %v, want %v", *got.State, *want.State)
+	}
+	if *got.Title != *want.Title {
+		t.Errorf("GetPR PR Title don't match; got %v, want %v", *got.Title, *want.Title)
+	}
+	if *got.Body != *want.Body {
+		t.Errorf("GetPR PR Body don't match; got %v, want %v", *got.Body, *want.Body)
 	}
 }

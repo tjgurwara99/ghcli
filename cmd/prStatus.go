@@ -43,20 +43,20 @@ func newPrStatusCmd() *cobra.Command {
 			if repo == "" {
 				return fmt.Errorf("repo is required")
 			}
-			ghApi := api.NewApi(client, "https://api.github.com/")
+			ghApi := api.NewApi(client)
 			pr, err := ghApi.GetPR(repo, prNumber)
 			if err != nil {
 				return err
 			}
 			statusColour := green
-			if pr.State == "closed" {
+			if *pr.State == "closed" {
 				statusColour = red
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "%sStatus: %s\n", statusColour, pr.State)
-			fmt.Fprintf(cmd.OutOrStdout(), "%sTitle: %s\n", statusColour, pr.Title)
-			fmt.Fprintf(cmd.OutOrStdout(), "%sURL: %s\n", statusColour, pr.URL)
-			fmt.Fprintf(cmd.OutOrStdout(), "%sNumber: %d\n", statusColour, pr.Number)
-			fmt.Fprintf(cmd.OutOrStdout(), "%sBody: %s\n", statusColour, pr.Body)
+			fmt.Fprintf(cmd.OutOrStdout(), "%sStatus: %s\n", statusColour, *pr.State)
+			fmt.Fprintf(cmd.OutOrStdout(), "%sTitle: %s\n", statusColour, *pr.Title)
+			fmt.Fprintf(cmd.OutOrStdout(), "%sURL: %s\n", statusColour, *pr.HTMLURL)
+			fmt.Fprintf(cmd.OutOrStdout(), "%sNumber: %d\n", statusColour, *pr.Number)
+			fmt.Fprintf(cmd.OutOrStdout(), "%sBody: %s\n", statusColour, *pr.Body)
 			return nil
 		},
 	}

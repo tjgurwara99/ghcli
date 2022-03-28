@@ -41,21 +41,21 @@ func newListIssuesCmd() *cobra.Command {
 			if repo == "" {
 				return fmt.Errorf("repo is required")
 			}
-			ghApi := api.NewApi(client, "https://api.github.com/")
+			ghApi := api.NewApi(client)
 			issues, err := ghApi.ListIssues(repo, "open")
 			if err != nil {
 				return err
 			}
 			for _, issue := range issues {
 				statusColour := green
-				if issue.State == "closed" {
+				if *issue.State == "closed" {
 					statusColour = red
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "%sStatus: %s\n", statusColour, issue.State)
-				fmt.Fprintf(cmd.OutOrStdout(), "%sTitle: %s\n", statusColour, issue.Title)
-				fmt.Fprintf(cmd.OutOrStdout(), "%sURL: %s\n", statusColour, issue.URL)
-				fmt.Fprintf(cmd.OutOrStdout(), "%sNumber: %d\n", statusColour, issue.Number)
-				fmt.Fprintf(cmd.OutOrStdout(), "%sBody: %s\n", statusColour, issue.Body)
+				fmt.Fprintf(cmd.OutOrStdout(), "%sStatus: %s\n", statusColour, *issue.State)
+				fmt.Fprintf(cmd.OutOrStdout(), "%sTitle: %s\n", statusColour, *issue.Title)
+				fmt.Fprintf(cmd.OutOrStdout(), "%sURL: %s\n", statusColour, *issue.HTMLURL)
+				fmt.Fprintf(cmd.OutOrStdout(), "%sNumber: %d\n", statusColour, *issue.Number)
+				fmt.Fprintf(cmd.OutOrStdout(), "%sBody: %s\n", statusColour, *issue.Body)
 			}
 			return nil
 		},
